@@ -1,0 +1,177 @@
+---
+title: "Untitled"
+author: "JJayes"
+date: '2022-05-23'
+output: html_document
+---
+```{r}
+library(tidyverse)
+library(here)
+library(magick)
+
+```
+
+
+Process::
+
+Read in the PDF files. Convert them to images. 
+
+
+```{r}
+
+folder <- "pdfs"
+fname <- "Mitchell-demographic-rates.pdf"
+
+convert_to_jpeg <- function(folder, fname) {
+  fstub <- str_remove(fname, ".pdf")
+
+  pdf <- image_read_pdf(here(folder, fname))
+
+  jpeg <- image_convert(pdf, format = "jpeg")
+
+  n_pages <- length(jpeg)
+
+  pages <- 1:n_pages
+
+  make_image <- function(page) {
+    message("Writing image ", page)
+
+    filename <- str_c(here("jpegs", fstub), "_", page, ".jpeg")
+
+    jpeg[page] %>% image_write(filename)
+  }
+  
+  walk(pages, make_image)
+}
+
+convert_to_jpeg(folder, fname)
+
+```
+
+Function to stick country_names to column names
+
+```{r}
+
+column_names <- function(countries) {
+  year <- tibble(colnames = "year")
+  
+  metrics <- c("_B", "_D", "_M")
+  
+  tbl <- expand_grid(countries, metrics) %>%
+    mutate(colnames = str_c(countries, metrics)) %>%
+    select(colnames)
+
+  year %>%
+    bind_rows(tbl) %>%
+    pull(colnames)
+}
+```
+
+Function to process the data
+
+```{r}
+process_data <- function(path, countries) {
+  df <- read.csv(here::here(path), sep = ";", skip = 2)
+
+  df <- df %>%
+    as_tibble() %>%
+    mutate(across(where(is.character), parse_number)) %>%
+    select(!where(is.logical))
+
+  colnames(df) <- column_names(countries)
+
+  df <- df %>%
+    pivot_longer(-year) %>%
+    separate(name, into = c("country", "var"), sep = "_") %>%
+    filter(!is.na(value))
+  
+  min_year <- df %>% arrange(year) %>% slice(1) %>% pull(year)
+  
+  path_out <- str_c("mitchell", "_", min_year, "_", countries %>% paste0(collapse = "_"), ".rds")
+
+  df %>% write_rds(here::here("data_out", path_out))
+}
+```
+
+
+### Page 1
+
+```{r}
+path <- "jpegs/Mitchell-demographic-rates_6.jpg_tab.csv"
+
+countries <- c("Finland", "Norway", "Sweden")
+
+process_data("jpegs/Mitchell-demographic-rates_1.jpg_tab.csv", c("Finland", "Norway", "Sweden"))
+
+```
+
+### Page 2
+
+
+```{r}
+process_data("jpegs/Mitchell-demographic-rates_2.jpg_tab.csv", c("Austria", "Belgium", "Denmark", "Finland"))
+
+```
+
+```{r}
+process_data("jpegs/Mitchell-demographic-rates_2.jpg_tab.csv", c("Austria", "Belgium", "Denmark", "Finland"))
+
+```
+
+```{r}
+process_data("jpegs/Mitchell-demographic-rates_3.jpg_tab.csv", c("Austria", "Belgium", "Bulgaria", "Denmark"))
+
+```
+
+```{r}
+process_data("jpegs/Mitchell-demographic-rates_4.jpg_tab.csv", c("Serbia", "Spain", "Sweden"))
+
+```
+
+```{r}
+process_data("jpegs/Mitchell-demographic-rates_5.jpg_tab.csv", c("Czechoslovakia", "Denmark", "Finland", "France"))
+
+```
+
+
+```{r}
+process_data("jpegs/Mitchell-demographic-rates_6.jpg_tab.csv", c("Russia", "Serbia", "Spain", "Sweden"))
+
+```
+
+```{r}
+process_data("jpegs/Mitchell-demographic-rates_7.jpg_tab.csv", c("Czechoslovakia", "Denmark", "Finland", "France"))
+
+```
+
+
+```{r}
+process_data("jpegs/Mitchell-demographic-rates_8.jpg_tab.csv", c("Norway", "Poland", "Portugal", "Romania"))
+
+```
+
+```{r}
+process_data("jpegs/Mitchell-demographic-rates_8.jpg_tab.csv", c("Norway", "Poland", "Portugal", "Romania"))
+
+```
+
+
+```{r}
+process_data("jpegs/Mitchell-demographic-rates_9.jpg_tab.csv", c("Russia", "Spain", "Sweden"))
+
+```
+
+
+```{r}
+files <- list.files(path = here::here("data_out"), pattern = ".*.rds") %>% 
+    str_c("data_out/", .)
+
+df <- map(files, read_rds) %>% 
+    bind_rows()
+
+df <- df %>% 
+    filter(country %in% c("Norway", "Sweden", "Denmark"))
+
+# df %>% write_rds("data_out/mitchell_collected.rds")
+```
+
