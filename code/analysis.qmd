@@ -1,0 +1,145 @@
+---
+title: "Analysis"
+format: html
+---
+
+
+Collect 5 together
+
+```{r}
+library(tidyverse)
+
+list_of_files <- list.files(path = "1911/", pattern = "*.rds") %>% 
+    str_c("1911/", .)
+
+df <-
+    list_of_files %>% 
+    map_df(~read_rds(.))
+
+df %>% 
+    count(parish, sort = T)
+```
+
+
+```{r}
+df <- df %>% 
+    mutate(parish = str_remove_all(parish, "[:punct:]"),
+           parish = str_remove_all(parish, "[0-9]"),
+           parish = str_squish(parish))
+
+df %>% 
+    count(parish, sort = T)
+```
+
+## Join codes
+
+```{r}
+codes <- readxl::read_excel(here::here("data/agric_output_codebook.xlsx"))
+
+codes <- codes %>% 
+    select(col, desc)
+
+df <- df %>% 
+    inner_join(codes)
+
+df <- df %>% 
+    mutate(desc = fct_reorder(desc, col))
+```
+
+
+What does it look like?
+
+```{r}
+parishes <- df %>% 
+    filter(nchar(parish) > 0,
+           !str_detect(parish, "Summa")) %>% 
+    distinct(parish) %>% 
+    sample_n(20)
+
+df %>% 
+    filter(col %in% 2:20,
+           parish %in% parishes$parish) %>% 
+    ggplot(aes(value, desc, fill = parish)) +
+    geom_col(show.legend = F) +
+    facet_wrap(~ parish)
+```
+
+
+```{r}
+df %>% 
+    filter(parish == "Alsike")
+
+
+```
+
+
+## Map
+
+### Map prep and joins
+
+```{r}
+library(sf)
+```
+
+The names comes from the forsamlingar names map in `maps` repo.
+
+```{r}
+names <- read_rds("data/forsamlingar_names.rds")
+
+names <- names %>% 
+    mutate(namn = str_remove(namn, "församling"),
+           namn = str_squish(namn)) %>% 
+    rename(parish = namn)
+
+df %>% 
+    distinct(parish) %>% 
+    inner_join(names, )
+```
+
+
+```{r}
+map <- read_rds("data/kommun_map.rds")
+
+map_areas <- map %>%
+  as_tibble() %>%
+  select(kn_namn)
+
+df %>% 
+    count(parish)
+
+```
+
+
+```{r}
+gg_iraph_map <- map %>% 
+    ggplot() +
+    geom_sf_interactive(aes(tooltip = kn_namn)) +
+    theme_void()
+
+girafe(
+  ggobj = gg_iraph_map,
+  width_svg = 8,
+  height_svg = 4,
+  options = list(
+    # opts_tooltip(css = tooltip_css, delay_mouseover = 0, delay_mouseout = 0),
+    opts_hover_inv(css = "opacity:0.1;"),
+    opts_hover(css = "stroke-width:2;")
+  )
+)
+```
+
+
+
+```{r}
+
+list_of_files <- list.files(path = "1865/", pattern = "*.rds") %>% 
+    str_c("1865/", .)
+
+df <-
+  list_of_files %>%
+  map_df(~ read_rds(.))
+
+df %>% 
+    count(parish, sort = T) %>% view()
+```
+

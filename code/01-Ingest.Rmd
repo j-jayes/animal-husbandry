@@ -18,9 +18,8 @@ Read in the PDF files. Convert them to images.
 
 
 ```{r}
-
 folder <- "pdfs"
-fname <- "Mitchell-demographic-rates.pdf"
+fname <- "hh_1900_stockholm.pdf"
 
 convert_to_jpeg <- function(folder, fname) {
   fstub <- str_remove(fname, ".pdf")
@@ -36,9 +35,9 @@ convert_to_jpeg <- function(folder, fname) {
   make_image <- function(page) {
     message("Writing image ", page)
 
-    filename <- str_c(here("jpegs", fstub), "_", page, ".jpeg")
+    filename <- str_c(here("jpegs_hh", fstub), "_", page, ".jpeg")
 
-    jpeg[page] %>% image_write(filename)
+    jpeg[page] %>% image_write(filename, quality = 100)
   }
   
   walk(pages, make_image)
@@ -175,3 +174,426 @@ df <- df %>%
 # df %>% write_rds("data_out/mitchell_collected.rds")
 ```
 
+
+## Stockholms hyrlista
+
+```{r}
+df <- read.csv(here::here("dewarped", "IMG_1571_thresh.png_tab.csv"), skip = 2, sep = ";")
+
+df %>% as_tibble()
+
+
+```
+
+### Joberg day wages
+
+```{r}
+# page 3
+df <- read.csv(here::here("jpegs", "Jöberg_1972_day_wages_3.jpg_tab.csv"), skip = 2, sep = ";")
+
+df_3 <- df %>% as_tibble() %>% 
+    janitor::clean_names() %>% 
+    select(year, average_price_1, cv_1) %>% 
+    # fixing error
+    mutate(year = case_when(
+        year == 1809 ~ 1909,
+        TRUE ~ year
+    ))
+
+# page 2
+df <- read.csv(here::here("jpegs", "Jöberg_1972_day_wages_2.jpg_tab.csv"), skip = 2, sep = ";")
+
+df_2 <- df %>%
+  as_tibble() %>%
+  janitor::clean_names() %>%
+  mutate(year = parse_number(year)) %>%
+  arrange(year) %>%
+  select(year, average_price_1, cv_1) %>%
+  mutate(across(where(is.character), parse_number)) %>%
+  filter(!is.na(average_price_1))
+
+# page 1
+df <- read.csv(here::here("jpegs", "Jöberg_1972_day_wages_1.jpg_tab.csv"), skip = 2, sep = ";")
+
+df_1 <- df %>%
+  as_tibble() %>%
+  janitor::clean_names() %>%
+  select(year, average_price_1, cv_1) %>%
+  mutate(across(where(is.character), parse_number)) %>%
+  filter(!is.na(average_price_1)) %>%
+  mutate(year = case_when(
+    year == 1891 ~ 1791,
+    TRUE ~ year
+  ))
+
+
+df_wages <- df_1 %>% 
+    bind_rows(df_2) %>% 
+    bind_rows(df_3)
+
+# df_wages %>% write_rds("data_out/Joberg_day_wages_sweden.rds")
+```
+
+## HH stockholm
+
+page 1
+
+```{r}
+df <- read.csv(here::here("jpegs", "hh_1890_stockhom_1.jpg_tab.csv"), skip = 2, sep = ";")
+
+df %>%
+  as_tibble() %>%
+  janitor::clean_names() %>% 
+    select(!x) %>% 
+    mutate(x_1 = str_c(x_1, x_2)) %>% 
+    select(!x_2) %>% 
+    mutate(across(where(is.numeric), as.character)) %>% 
+    pivot_longer(-x_1) %>% 
+    mutate(value_num = str_remove(value, "[:punct:]"),
+           value_num = parse_number(value_num, locale = locale(decimal_mark = ","))) %>% view()
+
+```
+
+page 2
+
+```{r}
+df <- read.csv(here::here("jpegs", "hh_1890_stockhom_2.jpg_tab.csv"), skip = 2, sep = ";")
+
+df %>%
+  as_tibble() %>%
+  janitor::clean_names() %>% 
+    select(!x) %>% 
+    mutate(across(where(is.numeric), as.character)) %>% 
+    pivot_longer(-x1) %>% 
+    mutate(value_num = str_remove(value, "[:punct:]"),
+           value_num = parse_number(value_num, locale = locale(decimal_mark = ",")),
+           name = parse_number(name)) %>% 
+    select(!value) %>% 
+    rename(col = name,
+           value = value_num)
+```
+
+page 3
+
+```{r}
+df <- read.csv(here::here("jpegs", "hh_1890_stockhom_3.jpg_tab.csv"), skip = 2, sep = ";")
+
+df %>%
+  as_tibble() %>% view()
+  janitor::clean_names() %>% 
+    select(!x) %>% 
+    mutate(across(where(is.numeric), as.character)) %>% 
+    pivot_longer(-x1) %>% 
+    mutate(value_num = str_remove(value, "[:punct:]"),
+           value_num = parse_number(value_num, locale = locale(decimal_mark = ",")),
+           name = parse_number(name)) %>% 
+    select(!value) %>% 
+    rename(col = name,
+           value = value_num)
+```
+
+
+
+
+page 4
+
+```{r}
+df <- read.csv(here::here("jpegs", "hh_1890_stockhom_4.jpg_tab.csv"), skip = 2, sep = ";")
+
+df %>%
+  as_tibble() %>% view()
+  janitor::clean_names() %>% 
+    select(!x) %>% 
+    mutate(across(where(is.numeric), as.character)) %>% 
+    pivot_longer(-x1) %>% 
+    mutate(value_num = str_remove(value, "[:punct:]"),
+           value_num = parse_number(value_num, locale = locale(decimal_mark = ",")),
+           name = parse_number(name)) %>% 
+    select(!value) %>% 
+    rename(col = name,
+           value = value_num)
+```
+
+I need to work on some code that splits the text in each column logically if we get two in one.
+
+```{r}
+json <- jsonlite::fromJSON("jpegs/Mitchell-demographic-rates_1.jpeg_blocks.json")
+
+listviewer::jsonedit(json)
+
+json[["BlockType" == "CELL"]]
+
+json$BlockType
+```
+
+# 1911
+
+Function to read in tav
+
+```{r}
+read_tab <- function(number){
+    read.csv(here::here("jpegs", glue::glue("hh_1911_stockholm_bigger_{number}.jpg_tab.csv")), skip = 2, sep = ";")
+    
+}
+```
+
+Function to process data
+
+```{r}
+process_tab <- function(tbl, second_col) {
+  tbl %>%
+    as_tibble() %>%
+    janitor::clean_names() %>%
+    select(!x) %>%
+    mutate(across(where(is.numeric), as.character)) %>%
+    pivot_longer(-second_col) %>%
+    mutate(
+      value_num = str_remove(value, "[:punct:]"),
+      value_num = parse_number(value_num, locale = locale(decimal_mark = ",")),
+      name = parse_number(name)
+    ) %>%
+    select(!value) %>%
+    rename(
+      col = name,
+      value = value_num
+    ) %>%
+    rename(parish = 1)
+}
+```
+
+page 1 of 1911
+
+```{r}
+number <- 1
+
+df <- read_tab(number)
+
+df <- process_tab(df, "x1")
+
+df %>% write_rds(here::here("1911", glue::glue("hh_1911_{number}.rds")))
+```
+
+page 2 of 1911
+
+```{r}
+number <- 2
+
+df <- read_tab(number)
+
+df <- process_tab(df, "x1")
+
+df %>% write_rds(here::here("1911", glue::glue("hh_1911_{number}.rds")))
+```
+
+
+
+page 3 of 1911
+
+```{r}
+number <- 3
+
+df <- read_tab(number)
+
+df <- process_tab(df, "x1")
+
+df %>% write_rds(here::here("1911", glue::glue("hh_1911_{number}.rds")))
+```
+
+
+
+
+
+page 4 of 1911
+
+```{r}
+number <- 4
+
+df <- read_tab(number)
+
+df <- process_tab(df, "x1")
+
+df %>% write_rds(here::here("1911", glue::glue("hh_1911_{number}.rds")))
+```
+
+
+page 5 of 1911 part 1
+
+```{r}
+number <- "5_1"
+
+df <- read_tab(number)
+
+df <- process_tab(df, "x1")
+
+df %>% write_rds(here::here("1911", glue::glue("hh_1911_{number}.rds")))
+```
+
+
+page 5 of 1911 part 2
+
+```{r}
+number <- "5_2"
+second_col <- "x_1"
+
+df <- read_tab(number)
+
+df <- process_tab(df, second_col)
+
+df %>% write_rds(here::here("1911", glue::glue("hh_1911_{number}.rds")))
+
+```
+
+
+# 1865
+
+Function to read in tab
+
+```{r}
+read_tab <- function(number){
+    read.csv(here::here("jpegs_hh", glue::glue("hh_1865_stockholm_{number}.jpg_tab.csv")), skip = 2, sep = ";")
+    
+}
+```
+
+Function to process data
+
+```{r}
+process_tab <- function(tbl, second_col) {
+  tbl %>%
+    as_tibble() %>%
+    janitor::clean_names() %>%
+    select(!x) %>%
+    mutate(across(where(is.numeric), as.character)) %>%
+    pivot_longer(-second_col) %>%
+    mutate(
+      value_num = str_remove(value, "[:punct:]"),
+      value_num = parse_number(value_num, locale = locale(decimal_mark = ",")),
+      name = parse_number(name)
+    ) %>%
+    select(!value) %>%
+    rename(
+      col = name,
+      value = value_num
+    ) %>%
+    rename(parish = 1)
+}
+```
+
+page 1 of 1865
+
+```{r}
+number <- "1"
+second_col <- "x1"
+
+df <- read_tab(number)
+
+df <- process_tab(df, second_col)
+
+df %>% write_rds(here::here("1865", glue::glue("hh_1865_{number}.rds")))
+
+```
+
+
+page 2 of 1865
+
+```{r}
+number <- "2"
+second_col <- "x1"
+
+df <- read_tab(number)
+
+df <- process_tab(df, second_col)
+
+df %>% write_rds(here::here("1865", glue::glue("hh_1865_{number}.rds")))
+
+```
+
+
+page 3 of 1865
+
+```{r}
+number <- "3"
+second_col <- "x1"
+
+df <- read_tab(number)
+
+df <- process_tab(df, second_col)
+
+df %>% write_rds(here::here("1865", glue::glue("hh_1865_{number}.rds")))
+
+```
+
+
+page 4 of 1865
+
+```{r}
+number <- "4"
+second_col <- "x1"
+
+df <- read_tab(number)
+
+df <- process_tab(df, second_col)
+
+df %>% write_rds(here::here("1865", glue::glue("hh_1865_{number}.rds")))
+
+```
+
+
+page 5 of 1865
+
+```{r}
+number <- "5"
+second_col <- "x1"
+
+df <- read_tab(number)
+
+df <- process_tab(df, second_col)
+
+df %>% write_rds(here::here("1865", glue::glue("hh_1865_{number}.rds")))
+
+```
+
+
+page 6 of 1865
+
+```{r}
+number <- "6"
+second_col <- "x1"
+
+df <- read_tab(number)
+
+df <- process_tab(df, second_col)
+
+df %>% write_rds(here::here("1865", glue::glue("hh_1865_{number}.rds")))
+
+```
+
+
+page 7 of 1865
+
+```{r}
+number <- "7"
+second_col <- "x1"
+
+df <- read_tab(number)
+
+df <- process_tab(df, second_col)
+
+df %>% write_rds(here::here("1865", glue::glue("hh_1865_{number}.rds")))
+
+```
+
+
+page 8 of 1865
+
+```{r}
+number <- "8"
+second_col <- "x1"
+
+df <- read_tab(number)
+
+df <- process_tab(df, second_col)
+
+df %>% write_rds(here::here("1865", glue::glue("hh_1865_{number}.rds")))
+
+```

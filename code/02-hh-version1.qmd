@@ -1,0 +1,75 @@
+---
+title: "hh version 1"
+format: html
+---
+
+## Purpose
+
+```{r}
+
+## HH stockholm
+```
+page 1
+
+```{r}
+df <- read.csv(here::here("jpegs", "hh_1890_stockhom_1.jpg_tab.csv"), skip = 2, sep = ";")
+
+df %>%
+  as_tibble() %>%
+  janitor::clean_names() %>% 
+    select(!x) %>% 
+    mutate(x_1 = str_c(x_1, x_2)) %>% 
+    select(!x_2) %>% 
+    mutate(across(where(is.numeric), as.character)) %>% 
+    pivot_longer(-x_1) %>% 
+    mutate(value_num = str_remove(value, "[:punct:]"),
+           value_num = parse_number(value_num, locale = locale(decimal_mark = ",")),
+           name = parse_number(name)) %>% 
+    select(!value) %>% 
+    rename(col = name,
+           value = value_num)
+
+```
+
+page 2
+
+```{r}
+df <- read.csv(here::here("jpegs", "hh_1890_stockhom_2.jpg_tab.csv"), skip = 2, sep = ";")
+
+df %>%
+  as_tibble() %>%
+  janitor::clean_names() %>% 
+    select(!x) %>% 
+    mutate(across(where(is.numeric), as.character)) %>% 
+    pivot_longer(-x1) %>% 
+    mutate(value_num = str_remove(value, "[:punct:]"),
+           value_num = parse_number(value_num, locale = locale(decimal_mark = ",")),
+           name = parse_number(name)) %>% 
+    select(!value) %>% 
+    rename(col = name,
+           value = value_num)
+```
+
+page 3
+
+```{r}
+df <- read.csv(here::here("jpegs", "hh_1890_stockhom_3.jpg_tab.csv"), skip = 2, sep = ";")
+
+df %>%
+  as_tibble() %>%
+  janitor::clean_names() %>% view()
+    select(!x) %>% 
+    mutate(across(where(is.numeric), as.character)) %>% 
+    pivot_longer(-x1) %>% 
+    mutate(value_num = str_remove(value, "[:punct:]"),
+           value_num = parse_number(value_num, locale = locale(decimal_mark = ",")),
+           name = parse_number(name)) %>% 
+    select(!value) %>% 
+    rename(col = name,
+           value = value_num)
+```
+
+
+
+
+
