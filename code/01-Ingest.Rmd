@@ -597,3 +597,192 @@ df <- process_tab(df, second_col)
 df %>% write_rds(here::here("1865", glue::glue("hh_1865_{number}.rds")))
 
 ```
+
+
+# 1890
+
+Function to read in tab
+
+```{r}
+read_tab <- function(number) {
+  read.csv(here::here("jpegs_hh", glue::glue("hh_1890_stockholm_{number}.jpg_tab.csv")), skip = 2, sep = ";")
+}
+```
+
+Function to process data
+
+```{r}
+process_tab <- function(tbl, second_col) {
+  tbl %>%
+    as_tibble() %>%
+    janitor::clean_names() %>%
+    select(!x) %>%
+    mutate(across(where(is.numeric), as.character)) %>%
+    pivot_longer(-second_col) %>%
+    mutate(
+      value_num = str_remove(value, "[:punct:]"),
+      value_num = parse_number(value_num, locale = locale(decimal_mark = ",")),
+      name = parse_number(name)
+    ) %>%
+    select(!value) %>%
+    rename(
+      col = name,
+      value = value_num
+    ) %>%
+    rename(parish = 1)
+}
+```
+
+page 1 of 1890
+
+```{r}
+number <- "1"
+second_col <- "x1"
+df <- read_tab(number)
+df <- process_tab(df, second_col)
+df %>% write_rds(here::here("1890", glue::glue("hh_1890_{number}.rds")))
+```
+
+page 2 of 1890
+
+```{r}
+number <- "2"
+second_col <- "x1"
+df <- read_tab(number)
+df <- process_tab(df, second_col)
+df %>% write_rds(here::here("1890", glue::glue("hh_1890_{number}.rds")))
+```
+
+page 3 of 1890
+
+```{r}
+number <- "3"
+second_col <- "x1"
+df <- read_tab(number)
+df <- process_tab(df, second_col)
+df %>% write_rds(here::here("1890", glue::glue("hh_1890_{number}.rds")))
+```
+
+page 4 of 1890
+
+```{r}
+number <- "4"
+second_col <- "x1"
+df <- read_tab(number)
+df <- process_tab(df, second_col)
+df %>% write_rds(here::here("1890", glue::glue("hh_1890_{number}.rds")))
+```
+
+page 5 of 1890
+I need to fix this one...
+```{r}
+number <- "5"
+second_col <- "x1"
+df <- read_tab(number)
+df <- process_tab(df, second_col)
+df %>% write_rds(here::here("1890", glue::glue("hh_1890_{number}.rds")))
+```
+
+
+page 6 of 1890
+
+```{r}
+number <- "6"
+second_col <- "x1"
+df <- read_tab(number)
+df <- process_tab(df, second_col)
+df %>% write_rds(here::here("1890", glue::glue("hh_1890_{number}.rds")))
+```
+
+# 1900
+
+
+Function to read in tab
+
+```{r}
+read_tab <- function(number) {
+  read.csv(here::here("jpegs_hh", glue::glue("hh_1900_stockholm_{number}.jpg_tab.csv")), skip = 2, sep = ";")
+}
+```
+
+Function to process data
+
+```{r}
+process_tab <- function(tbl, second_col) {
+  tbl %>%
+    as_tibble() %>%
+    janitor::clean_names() %>%
+    select(!x) %>%
+    mutate(across(where(is.numeric), as.character)) %>%
+    pivot_longer(-second_col) %>%
+    mutate(
+      value_num = str_remove(value, "[:punct:]"),
+      value_num = parse_number(value_num, locale = locale(decimal_mark = ",")),
+      name = parse_number(name)
+    ) %>%
+    select(!value) %>%
+    rename(
+      col = name,
+      value = value_num
+    ) %>%
+    rename(parish = 1)
+}
+```
+
+page 1 of 1900
+
+```{r}
+number <- "1"
+second_col <- "x1"
+df <- read_tab(number)
+df <- process_tab(df, second_col)
+df %>% write_rds(here::here("1900", glue::glue("hh_1900_{number}.rds")))
+```
+
+
+page 2 of 1900
+
+```{r}
+number <- "2"
+second_col <- "x_1"
+df <- read_tab(number)
+df <- process_tab(df, second_col)
+df %>% write_rds(here::here("1900", glue::glue("hh_1900_{number}.rds")))
+```
+
+
+page 3 of 1900
+
+```{r}
+number <- "3"
+second_col <- "x1"
+df <- read_tab(number)
+df <- process_tab(df, second_col)
+df %>% write_rds(here::here("1900", glue::glue("hh_1900_{number}.rds")))
+```
+
+
+page 4 of 1900
+
+```{r}
+number <- "4"
+second_col <- "x_1"
+df <- read_tab(number)
+df <- process_tab(df, second_col)
+df %>% write_rds(here::here("1900", glue::glue("hh_1900_{number}.rds")))
+```
+
+
+page 5 of 1900
+
+```{r}
+number <- "5_1"
+second_col <- "x1"
+df <- read_tab(number)
+df <- process_tab(df, second_col)
+df %>% write_rds(here::here("1900", glue::glue("hh_1900_{number}.rds")))
+```
+
+
+
+
