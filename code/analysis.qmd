@@ -9,15 +9,24 @@ Collect 5 together
 ```{r}
 library(tidyverse)
 
-list_of_files <- list.files(path = "1911/", pattern = "*.rds") %>% 
-    str_c("1911/", .)
+get_file_names <- function(year) {
+  list.files(path = glue::glue("{year}/"), pattern = "*.rds") %>%
+    str_c(glue::glue("{year}/"), .) %>% as_tibble()
+}
+
+
+list_of_files <- get_file_names(1865) %>% 
+    bind_rows(get_file_names(1890)) %>% 
+    bind_rows(get_file_names(1900)) %>% 
+    bind_rows(get_file_names(1911))
 
 df <-
-    list_of_files %>% 
+    list_of_files %>% pull(value) %>% 
     map_df(~read_rds(.))
 
 df %>% 
     count(parish, sort = T)
+
 ```
 
 
@@ -29,6 +38,11 @@ df <- df %>%
 
 df %>% 
     count(parish, sort = T)
+
+# df %>% 
+#     distinct(parish) %>% 
+#     arrange(parish) %>% 
+#     write_rds(here::here("data", "parish_names_from_aws.rds"))
 ```
 
 ## Join codes
@@ -93,7 +107,7 @@ names <- names %>%
 
 df %>% 
     distinct(parish) %>% 
-    inner_join(names, )
+    inner_join(names, by = c("parish")) %>% view()
 ```
 
 
@@ -142,4 +156,7 @@ df <-
 df %>% 
     count(parish, sort = T) %>% view()
 ```
+
+
+
 

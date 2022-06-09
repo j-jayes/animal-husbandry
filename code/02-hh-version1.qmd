@@ -6,7 +6,7 @@ format: html
 ## Purpose
 
 ```{r}
-
+library(tidyverse)
 ## HH stockholm
 ```
 page 1
