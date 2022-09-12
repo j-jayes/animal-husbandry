@@ -784,5 +784,46 @@ df %>% write_rds(here::here("1900", glue::glue("hh_1900_{number}.rds")))
 ```
 
 
+## PNGs from John
+
+Function to read in tab
+
+```{r}
+read_tab <- function(number) {
+  read.csv(here::here("pngs", glue::glue("calmar{number}.png_tab.csv")), skip = 2, sep = ";")
+}
+```
+
+Function to process data
+
+```{r}
+process_tab <- function(tbl, second_col) {
+  tbl %>%
+    as_tibble() %>%
+    janitor::clean_names() %>%
+    select(!x) %>%
+    mutate(across(where(is.numeric), as.character)) %>%
+    pivot_longer(-second_col) %>%
+    mutate(
+      value_num = str_remove(value, "[:punct:]"),
+      value_num = parse_number(value_num, locale = locale(decimal_mark = ",")),
+      name = parse_number(name)
+    ) %>%
+    select(!value) %>%
+    rename(
+      col = name,
+      value = value_num
+    ) %>%
+    rename(parish = 1)
+}
+```
+
+
+```{r}
+number <- "1"
+second_col <- "x1"
+df <- read_tab(number)
+df <- process_tab(df, second_col)
+```
 
 

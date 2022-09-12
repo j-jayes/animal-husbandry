@@ -97,8 +97,8 @@ plot_col <- function(col_in) {
     ggplot(aes(geometry = geometry, fill = value)) +
     geom_sf() +
     # geom_sf(data = stockholm, size = 4, shape = 23, fill = "darkred") +
-    scale_fill_gradient2(low = "blue", high = "red", mid = "pink") +
-    labs(subtitle = glue::glue("From col: {col_in}"))
+    scale_fill_gradient2(low = "blue", high = "red", mid = "pink", midpoint = 400) +
+    labs(subtitle = glue::glue("Column index: {col_in}"))
 }
 ```
 
@@ -117,9 +117,21 @@ plot_col(13) +
 
 ```{r}
 plot_col(78) +
-  labs(title = "Horses")
+  labs(
+    title = "Horses by parish in Stockholm in 1900",
+    fill = "Number of horses"
+  ) +
+  theme_void()
 ```
 
+```{r}
+plot_col(3) +
+  labs(
+    title = "Horses by parish in Stockholm in 1900",
+    fill = "Number of horses"
+  ) +
+  theme_void()
+```
 
 
 
