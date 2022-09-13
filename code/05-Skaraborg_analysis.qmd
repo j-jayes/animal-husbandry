@@ -23,7 +23,15 @@ df <- df %>%
 ```
 
 ```{r}
-df
+codebook <- readxl::read_excel(here::here("data", "agric_output_codebook_v2.xlsx")) %>% 
+    rename(col = col_num) %>% 
+    filter(col != 1)
+
+df <- df %>% 
+    inner_join(codebook) 
+
+df %>% 
+    write_rds("Data-explorer/df_init.rds")
 ```
 
 What is the app going to look like?
@@ -54,14 +62,9 @@ plots:
 The grouping has been done in excel. Now can do an innerjoin
 
 ```{r}
-codebook <- readxl::read_excel(here::here("data", "agric_output_codebook_v2.xlsx")) %>% 
-    rename(col = col_num) %>% 
-    filter(col != 1)
-
 df_temp <- df %>% 
     filter(parish_match == "borgunda") %>% 
-    arrange(year, col) %>% 
-    inner_join(codebook)
+    arrange(year, col)
 
 ```
 
@@ -74,7 +77,11 @@ df_temp %>%
   filter(group == "demographics") %>%
   ggplot(aes(year, value, colour = eng_trans_corrected)) +
   geom_point() +
-  geom_line()
+  geom_line() +
+    scale_y_continuous(labels = scales::number_format()) +
+    labs(x = "Year",
+         y = NULL,
+         colour = "Statistic")
 ```
 
 #### Ownership
@@ -121,9 +128,11 @@ plot_crops <- function(product) {
 plot_crops(c("seed", "harvest")) +
   facet_wrap(~group, nrow = 2, scales = "free_y")
 
-plot_crops(c("seed")) +
+p <- plot_crops(c("seed")) +
     labs(x = "Year",
          y = "Volume of seed in cubic feet")
+
+plotly::ggplotly(p)
 
 plot_crops(c("harvest")) +
     labs(x = "Year",
