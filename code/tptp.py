@@ -58,9 +58,9 @@ def get_table_csv_results(file_name):
     pprint(blocks)
     
     # write out the blocks to json file
-    output_file =  f"{file_name}_blocks.json"
-    with open(output_file, 'w', encoding='utf-8') as f:
-      json.dump(blocks, f, ensure_ascii=False, indent=4)
+    # output_file =  f"{file_name}_blocks.json"
+    # with open(output_file, 'w', encoding='utf-8') as f:
+    #   json.dump(blocks, f, ensure_ascii=False, indent=4)
 
     blocks_map = {}
     table_blocks = []

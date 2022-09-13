@@ -3,3 +3,64 @@ title: "Skaraborg county"
 format: html
 ---
 
+
+Function to read in tab
+
+```{r}
+library(tidyverse)
+
+list_of_files <- list.files(path = here::here("skaraborgs"), pattern = ".*.tab.csv") %>% 
+    str_c("skaraborgs/", .)
+
+tbl_files <- list_of_files %>% 
+    as_tibble()
+
+read_tab <- function(file_path) {
+  read.csv(here::here(file_path), skip = 2, sep = ";")
+}
+
+```
+
+Function to process data
+
+```{r}
+process_tab <- function(tbl, second_col) {
+  tbl %>%
+    as_tibble() %>%
+    janitor::clean_names() %>%
+    select(!x) %>%
+    mutate(across(where(is.numeric), as.character)) %>%
+    pivot_longer(-second_col) %>%
+    mutate(
+      value_num = str_remove(value, "[:punct:]"),
+      value_num = parse_number(value_num, locale = locale(decimal_mark = ",")),
+      name = parse_number(name)
+    ) %>%
+    select(!value) %>%
+    rename(
+      col = name,
+      value = value_num
+    ) %>%
+    rename(parish = 1)
+}
+```
+
+
+```{r}
+file_name <- tbl_files %>%
+  slice(2) %>%
+  pull()
+
+second_col <- "x1"
+df <- read_tab(file_name)
+df <- process_tab(df, second_col)
+```
+
+
+## Now we're ushing a shell script - what is this?
+
+An sh script 
+
+
+
+
