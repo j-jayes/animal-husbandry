@@ -54,13 +54,138 @@ file_name <- tbl_files %>%
 second_col <- "x1"
 df <- read_tab(file_name)
 df <- process_tab(df, second_col)
+
 ```
 
 
 ## Now we're ushing a shell script - what is this?
 
-An sh script 
+We want to create a shell script that contains all the names of the image files in the folder, then we want to print out the command for what we want it to run. 
+
+Let's do it in stages.
+
+### List of image files
+
+```{r}
+list_of_images <- list.files(path = here::here("skaraborgs"), pattern = ".*.png$|jpg$") %>% 
+    str_c("skaraborgs/", .)
+
+```
+
+The shell script must contain the line:
+
+python code/tptp.py "skaraborgs/1866_68.jpg"
+
+So we can create this by making a tibble of the filename and then appending the text at the beginning
+
+```{r}
+write_out_shell <- function() {
+  list_of_images %>%
+    as_tibble() %>%
+    mutate(
+      value = str_c("python code/tptp.py ", "\'", value, "\'"),
+      # line break for printing out
+      value = str_c(value, "\n")
+    ) %>%
+    pull(value) %>%
+    cat()
+}
+
+```
+
+Now we write this out to a file.
 
 
+```{r}
+sink("sh_test_2.sh")
+
+write_out_shell()
+
+sink()
+```
+
+
+
+
+
+
+
+Now reading in the data and keeping the year from the file name associated with the data
+
+```{r}
+list_of_files <- list.files(path = here::here("skaraborgs"), pattern = ".*.tab.csv") %>% 
+    str_c("skaraborgs/", .)
+
+tbl_files <- list_of_files %>% 
+    as_tibble()
+
+```
+
+```{r}
+read_data_write_year <- function(index) {
+  file_name <- tbl_files %>%
+    slice(index) %>%
+    pull()
+
+  year <- str_extract(file_name, "18\\d\\d") %>% as.numeric()
+
+  second_col <- "x1"
+  df <- read_tab(file_name)
+  df <- process_tab(df, second_col)
+
+  df <- df %>%
+    mutate(year = year)
+
+  df %>% write_rds(here::here("skaraborgs", glue::glue("skaraborgs_{year}_{index}.rds")))
+}
+
+tbl_files %>% 
+    # head(5) %>% 
+    mutate(rn = row_number()) %>% 
+    filter(between(rn, 51, 152)) %>% 
+    mutate(data_out = map(rn, read_data_write_year))
+```
+
+Isssues: 39, 50. Come back to these
+
+```{r}
+tbl_files %>% 
+    slice(39)
+```
+
+Read in all of the data and bind rows
+
+```{r}
+list_of_tbls <- list.files(path = here::here("skaraborgs"), pattern = ".*.rds") %>% 
+    str_c("skaraborgs/", .)
+
+df <- list_of_tbls %>% 
+    map_dfr(read_rds)
+
+
+```
+
+
+## What's next?
+
+Need to remove the missing data:
+
+- start with removing the cases when there is missing area name and missing value field.
+
+```{r}
+df <- df %>%
+    mutate(parish_match = str_squish(str_to_lower(parish))) %>% 
+    filter(parish_match != "",
+           !str_detect(parish_match, "summa"))
+
+
+df %>% count(year)
+
+# df %>% write_rds(here::here("skaraborgs", "df_combined_13_09_2021.rds"))
+
+df %>% 
+    distinct(parish_match, year) %>% 
+    arrange(parish_match) %>% view()
+```
 
 

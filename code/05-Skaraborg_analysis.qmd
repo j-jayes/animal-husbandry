@@ -1,0 +1,188 @@
+---
+title: "Skaraborg_analysis"
+format: html
+---
+
+```{r}
+library(tidyverse)
+
+df <- read_rds(here::here("skaraborgs", "df_combined_13_09_2021.rds"))
+```
+
+Here I select only the parishes that have more than 10 years with the same name. Need to do a lot of work to tidy up but this is a good enough start.
+
+```{r}
+select_parishes <- df %>% 
+    distinct(parish_match, year) %>% 
+    add_count(parish_match) %>% 
+    filter(n > 9) %>% 
+    distinct(parish_match)
+
+df <- df %>% 
+    filter(parish_match %in% select_parishes$parish_match)
+```
+
+```{r}
+df
+```
+
+What is the app going to look like?
+
+First assess the level of missing data per column per year per parish.
+
+On the first tab have a data explainer with an example of the source document.
+
+There's going to be a dropdown menu - then there must be groups of different kind of things. The owndership structure should be a filled column chart that is stacked? Maybe tabs for each section?
+
+So you want to compare across time, and you want to compare across output types.
+
+So on tab one there is:
+
+Looking at each parish: 
+
+input:
+
+- parish
+
+plots:
+
+- demographic trends
+- ownership plot
+- three output plots. land devoted to each crop, then seed and harvest
+- animals
+
+The grouping has been done in excel. Now can do an innerjoin
+
+```{r}
+codebook <- readxl::read_excel(here::here("data", "agric_output_codebook_v2.xlsx")) %>% 
+    rename(col = col_num) %>% 
+    filter(col != 1)
+
+df_temp <- df %>% 
+    filter(parish_match == "borgunda") %>% 
+    arrange(year, col) %>% 
+    inner_join(codebook)
+
+```
+
+### Panel for each parish
+
+#### Demographics
+
+```{r}
+df_temp %>%
+  filter(group == "demographics") %>%
+  ggplot(aes(year, value, colour = eng_trans_corrected)) +
+  geom_point() +
+  geom_line()
+```
+
+#### Ownership
+
+```{r}
+df_temp %>%
+  filter(group == "ownership") %>%
+  mutate(
+    type = case_when(
+      str_detect(eng_trans_corrected, "owned") ~ "Owned farms",
+      TRUE ~ "Used farms"
+    ),
+    eng_trans_corrected = str_squish(str_remove(eng_trans_corrected, ".*:")),
+    eng_trans_corrected = fct_inorder(eng_trans_corrected)
+  ) %>%
+  ggplot(aes(year, value, fill = eng_trans_corrected)) +
+  geom_col() +
+  facet_wrap(~type, scales = "free_y", nrow = 2) +
+  scale_fill_brewer(palette = "Paired") +
+  labs(
+    x = NULL,
+    y = "Number of farms"
+  )
+
+```
+
+In the footnote of the 1910 document it says that the largest used land is 500 hectares.
+
+#### Crops
+
+```{r}
+
+plot_crops <- function(product) {
+  df_temp %>%
+    filter(group %in% product) %>%
+    mutate(eng_trans_corrected = str_squish(str_remove(eng_trans_corrected, "Seed for|Harvest for"))) %>%
+    ggplot(aes(year, value, colour = eng_trans_corrected)) +
+    geom_point() +
+    geom_line() +
+    scale_y_continuous(labels = scales::number_format()) +
+    labs(colour = "Crop")
+}
+
+plot_crops(c("seed", "harvest")) +
+  facet_wrap(~group, nrow = 2, scales = "free_y")
+
+plot_crops(c("seed")) +
+    labs(x = "Year",
+         y = "Volume of seed in cubic feet")
+
+plot_crops(c("harvest")) +
+    labs(x = "Year",
+         y = "Volume of harvest in cubic feet")
+
+
+df_temp %>%
+  filter(group %in% c("seed", "harvest")) %>%
+  mutate(eng_trans_corrected = str_squish(str_remove(eng_trans_corrected, "Seed for|Harvest for"))) %>%
+  select(value, year, eng_trans_corrected, group) %>%
+  arrange(year, eng_trans_corrected) %>%
+  filter(!is.na(value)) %>%
+  pivot_wider(names_from = group, values_from = value) %>%
+  filter(
+    !is.na(seed),
+    !is.na(harvest)
+  ) %>%
+  ggplot(aes(seed, harvest)) +
+  geom_smooth(method = "lm") +
+  geom_point(aes(colour = eng_trans_corrected)) +
+  facet_wrap(~eng_trans_corrected, scales = "free") +
+  scale_x_continuous(labels = scales::number_format()) +
+  scale_y_continuous(labels = scales::number_format()) +
+  theme(legend.position = "none") +
+  labs(
+    title = "Relationship between volume of seed and harvest",
+    x = "Volume of seed in cubic feet",
+    y = "Volume of harvest in cubic feet"
+  )
+```
+
+
+```{r}
+df_temp %>%
+  ggplot(aes(year, value, colour = eng_trans_corrected)) +
+  geom_line(show.legend = F) +
+  facet_wrap(~group, scales = "free")
+```
+
+
+## Animals
+
+```{r}
+plot_animals <- function(){
+  df_temp %>%
+    filter(group == "animals") %>%
+    ggplot(aes(year, value, colour = eng_trans_corrected)) +
+    geom_point() +
+    geom_line() +
+    scale_y_continuous(labels = scales::number_format()) +
+    labs(
+      x = "Year",
+      colour = "Animals",
+      y = "Number of animals"
+    )
+}
+
+
+plot_animals()
+
+```
+
